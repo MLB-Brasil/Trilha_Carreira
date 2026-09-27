@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1d4e89">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Trilha de Carreira">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>Trilha de Carreira</title>
+<script src="trilha-carreira.config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>try { var t = localStorage.getItem("trilha.theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<style>
+:root {
+  --bg: #f3f5f9; --surface: #ffffff; --surface2: #edf0f6; --text: #141a26; --muted: #667085; --border: #e2e6ef;
+  --accent: #1d4e89; --accent2: #2f6fb5; --neg: #d92d20; --pos: #067647; --warn: #b54708; --gold: #f5b418;
+  --shadow: 0 6px 24px rgba(20, 35, 70, .08);
+  --sat: env(safe-area-inset-top, 0px); --sab: env(safe-area-inset-bottom, 0px);
+  /* tipos de registro: paleta categórica validada (ordem fixa) */
+  --t1: #2a78d6; --t2: #eb6834; --t3: #1baf7a; --t4: #eda100; --t5: #e87ba4; --t6: #4a3aa7;
+  /* status das goals */
+  --g0: #98a2b3; --g1: #2f6fb5; --g2: #12a150; --g3: #d92d20;
+  color-scheme: light;
+}
+:root[data-theme="dark"] { color-scheme: dark; --bg: #0d1119; --surface: #161c28; --surface2: #1f2636; --text: #eef2fa; --muted: #98a2b8; --border: #262e40;
+  --accent: #7fb0ec; --accent2: #2f6fb5; --neg: #ff6b61; --pos: #3ccb7f; --warn: #f5a524; --shadow: 0 6px 24px rgba(0,0,0,.35);
+  --t1: #3987e5; --t2: #d95926; --t3: #199e70; --t4: #c98500; --t5: #d55181; --t6: #9085e9;
+  --g0: #667085; --g1: #5b9be6; --g2: #1f9e5c; --g3: #ff6b61; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { color-scheme: dark; --bg: #0d1119; --surface: #161c28; --surface2: #1f2636; --text: #eef2fa; --muted: #98a2b8; --border: #262e40;
+    --accent: #7fb0ec; --accent2: #2f6fb5; --neg: #ff6b61; --pos: #3ccb7f; --warn: #f5a524; --shadow: 0 6px 24px rgba(0,0,0,.35);
+    --t1: #3987e5; --t2: #d95926; --t3: #199e70; --t4: #c98500; --t5: #d55181; --t6: #9085e9;
+    --g0: #667085; --g1: #5b9be6; --g2: #1f9e5c; --g3: #ff6b61; }
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; min-height: 100%; }
+body { background: var(--bg); color: var(--text); font: 15px/1.45 -apple-system, "Segoe UI", Roboto, system-ui, sans-serif; overscroll-behavior-y: contain; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { border: 0; background: none; cursor: pointer; }
+.app { max-width: 560px; margin: 0 auto; padding-bottom: calc(100px + var(--sab)); }
+
+/* topo */
+.top { position: sticky; top: 0; z-index: 10; padding: calc(var(--sat) + 12px) 16px 10px; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+.top h1 { margin: 0 0 10px; font-size: 21px; letter-spacing: -.3px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.logo { width: 42px; height: 42px; flex: none; filter: drop-shadow(0 4px 12px rgba(29, 78, 137, .4)); }
+.logo svg { width: 100%; height: 100%; display: block; }
+.ibtn { width: 34px; height: 34px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); display: grid; place-content: center; }
+.ibtn svg, .nav svg, .mf svg, .arr svg { fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.ibtn svg { width: 18px; height: 18px; }
+.hi { font-size: 13.5px; font-weight: 600; color: var(--muted); margin: -2px 0 10px; }
+.hi b { color: var(--text); }
+.mfbar { display: flex; align-items: center; gap: 6px; }
+.arr { flex: none; width: 36px; height: 36px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); display: grid; place-content: center; color: var(--muted); }
+.arr svg { width: 16px; height: 16px; }
+.mf { flex: 1; display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); font-weight: 650; font-size: 13.5px; text-align: left; min-width: 0; }
+.mf svg { width: 15px; height: 15px; flex: none; stroke: var(--accent); }
+.mfnow { flex: none; padding: 8px 11px; border-radius: 12px; background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); font-weight: 700; font-size: 11.5px; }
+
+main { padding: 8px 16px 0; }
+.view { display: none; } .view.on { display: block; animation: fade .18s ease; }
+@keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* destaque do mês */
+.hero { display: grid; gap: 10px; margin-bottom: 14px; }
+.bigtile { background: linear-gradient(135deg, var(--accent2), #1d4e89); color: #fff; border-radius: 24px; padding: 20px; box-shadow: 0 12px 30px rgba(29, 78, 137, .28); position: relative; overflow: hidden; }
+.bigtile::after { content: ""; position: absolute; right: -30px; top: -30px; width: 150px; height: 150px; border-radius: 50%; background: rgba(255,255,255,.08); }
+.bigtile .lbl { font-size: 12px; opacity: .85; text-transform: uppercase; letter-spacing: .6px; }
+.bigtile .big { font-size: 38px; font-weight: 800; letter-spacing: -1px; line-height: 1.1; margin: 4px 0 6px; }
+.bigtile .big small { font-size: 15px; font-weight: 600; opacity: .85; letter-spacing: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.chips span { font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: rgba(255,255,255,.16); }
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.tile { border-radius: 18px; padding: 12px; background: var(--surface); box-shadow: var(--shadow); min-width: 0; }
+.tile span { display: block; font-size: 11px; color: var(--muted); font-weight: 650; }
+.tile b { display: block; font-size: 20px; font-weight: 800; margin-top: 2px; }
+.tile small { font-size: 10.5px; color: var(--muted); }
+
+/* filtros */
+.filters { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 4px -16px 10px; padding-inline: 16px; }
+.filters::-webkit-scrollbar { display: none; }
+.f { flex: none; display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font-weight: 600; font-size: 13px; color: var(--muted); }
+.f i { width: 8px; height: 8px; border-radius: 50%; }
+.f.on { background: var(--text); color: var(--bg); border-color: var(--text); }
+.f .fn { font-size: 11px; font-weight: 700; opacity: .65; }
+.search { width: 100%; padding: 11px 14px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface); margin-bottom: 12px; outline: none; }
+.search:focus, .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--accent); }
+
+/* cards de registro */
+.list { display: grid; gap: 10px; }
+.reg { position: relative; display: grid; grid-template-columns: auto 1fr; gap: 12px; padding: 14px; background: var(--surface); border-radius: 18px; box-shadow: var(--shadow); cursor: pointer; overflow: hidden; transition: transform .1s; }
+.reg:active { transform: scale(.985); }
+.reg::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--tc); }
+.dbox { width: 48px; height: 52px; border-radius: 14px; display: grid; place-content: center; text-align: center; line-height: 1; background: var(--surface2); }
+.dbox small { font-size: 9.5px; font-weight: 700; text-transform: uppercase; color: var(--muted); letter-spacing: .4px; }
+.dbox b { font-size: 21px; font-weight: 800; margin: 2px 0 1px; }
+.rinfo { min-width: 0; }
+.rinfo h3 { margin: 4px 0 2px; font-size: 15px; font-weight: 700; line-height: 1.3; }
+.rinfo p { margin: 4px 0 0; font-size: 13px; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line; }
+.res { display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; font-size: 12.5px; font-weight: 700; color: var(--pos); background: color-mix(in srgb, var(--pos) 11%, transparent); padding: 3px 9px; border-radius: 8px; }
+.res svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.tp { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; color: var(--text); padding: 2px 9px 2px 3px; border-radius: 999px; background: color-mix(in srgb, var(--tc) 14%, transparent); }
+.tp i { width: 18px; height: 18px; border-radius: 50%; background: var(--tc); display: grid; place-content: center; }
+.tp i svg { width: 11px; height: 11px; fill: none; stroke: #fff; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.empty { text-align: center; color: var(--muted); padding: 40px 10px; }
+.empty b { display: block; color: var(--text); font-size: 15px; margin-bottom: 4px; }
+
+/* goals: linha do tempo */
+.period { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: var(--surface); border-radius: 18px; padding: 12px; box-shadow: var(--shadow); margin-bottom: 12px; }
+.period label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px; }
+.ym { display: grid; grid-template-columns: 1.3fr 1fr; gap: 6px; }
+.ym select, .field select { width: 100%; padding: 9px 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface2); outline: none; }
+.gstats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+.gstats div { background: var(--surface); border-radius: 14px; padding: 10px 6px; text-align: center; box-shadow: var(--shadow); }
+.gstats b { display: block; font-size: 20px; font-weight: 800; }
+.gstats span { font-size: 10.5px; color: var(--muted); font-weight: 650; display: inline-flex; align-items: center; gap: 4px; }
+.gstats i { width: 7px; height: 7px; border-radius: 50%; }
+.tl { position: relative; padding-left: 26px; }
+.tl::before { content: ""; position: absolute; left: 8px; top: 8px; bottom: 8px; width: 2px; border-radius: 2px; background: linear-gradient(var(--accent), color-mix(in srgb, var(--accent) 25%, transparent)); }
+.tm { position: relative; margin-bottom: 18px; }
+.tm::before { content: ""; position: absolute; left: -24px; top: 4px; width: 14px; height: 14px; border-radius: 50%; background: var(--surface); border: 3px solid var(--accent); }
+.tm.now::before { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 30%, transparent); }
+.tm.past::before { border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.tm h4 { margin: 0 0 8px; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+.tm h4 em { font-style: normal; font-size: 10.5px; padding: 2px 8px; border-radius: 999px; background: var(--gold); color: #3b2a00; letter-spacing: .3px; }
+.tm .none { font-size: 12.5px; color: var(--muted); margin: -4px 0 0; }
+.goal { background: var(--surface); border-radius: 16px; padding: 12px 14px; box-shadow: var(--shadow); margin-bottom: 8px; cursor: pointer; border-left: 4px solid var(--gc); }
+.goal h3 { margin: 6px 0 2px; font-size: 14.5px; font-weight: 700; }
+.goal p { margin: 4px 0 0; font-size: 12.5px; color: var(--muted); white-space: pre-line; }
+.gmeta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 11.5px; color: var(--muted); }
+.gs { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; color: var(--text); background: color-mix(in srgb, var(--gc) 18%, transparent); display: inline-flex; align-items: center; gap: 5px; }
+.gs i { width: 7px; height: 7px; border-radius: 50%; background: var(--gc); }
+.gbar { height: 5px; border-radius: 3px; background: var(--surface2); margin-top: 9px; overflow: hidden; }
+.gbar i { display: block; height: 100%; border-radius: 3px; background: var(--gc); transition: width .7s cubic-bezier(.2,.8,.2,1); }
+.gnote { font-size: 11.5px; font-weight: 700; margin-top: 6px; }
+.gnote.pos { color: var(--pos); } .gnote.neg { color: var(--neg); } .gnote.mut { color: var(--muted); }
+
+/* resumo */
+.yearbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.yearbar b { font-size: 18px; }
+.kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+.kpi { background: var(--surface); border-radius: 18px; padding: 14px; box-shadow: var(--shadow); }
+.kpi span { font-size: 11.5px; color: var(--muted); font-weight: 650; }
+.kpi b { display: block; font-size: 24px; font-weight: 800; letter-spacing: -.5px; margin: 2px 0; }
+.kpi small { font-size: 11px; color: var(--muted); }
+.panel { background: var(--surface); border-radius: 20px; padding: 16px; box-shadow: var(--shadow); margin-bottom: 14px; }
+.panel h2 { margin: 0 0 4px; font-size: 15px; }
+.sub { font-size: 12px; color: var(--muted); margin: 0 0 14px; }
+.lg { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 11.5px; color: var(--muted); margin: 0 0 12px; }
+.lg span { display: inline-flex; align-items: center; gap: 5px; }
+.lg i { width: 10px; height: 10px; border-radius: 3px; }
+.mm .cols { display: flex; gap: 5px; height: 160px; border-bottom: 1px solid var(--border); }
+.mm .mg { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 2px; border-radius: 6px 6px 0 0; min-width: 0; position: relative; }
+.mm .mg[data-tip]:hover { background: var(--surface2); }
+.mm .mg i { display: block; width: 64%; max-width: 30px; border-radius: 3px; }
+.mm .mg i:first-of-type { border-radius: 4px 4px 2px 2px; }
+.mm .mg b { position: absolute; left: 0; right: 0; text-align: center; font-size: 10.5px; color: var(--muted); font-weight: 700; }
+.mm .ax { display: flex; gap: 5px; font-size: 10.5px; color: var(--muted); margin-top: 5px; }
+.mm .ax span { flex: 1; text-align: center; } .mm .ax span.cur { color: var(--text); font-weight: 800; }
+.grow { margin-bottom: 12px; } .grow:last-child { margin-bottom: 0; }
+.gt { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; align-items: center; }
+.gt span { display: inline-flex; align-items: center; gap: 7px; min-width: 0; }
+.gt i { width: 9px; height: 9px; border-radius: 3px; flex: none; }
+.gt b { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.gt em { font-style: normal; color: var(--muted); font-weight: 600; margin-left: 6px; }
+.tr { height: 7px; border-radius: 4px; background: var(--surface2); overflow: hidden; margin-top: 5px; }
+.tr i { display: block; height: 100%; border-radius: 4px; }
+.yl h5 { margin: 14px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--accent); }
+.yl h5:first-child { margin-top: 0; }
+.yl div { display: flex; gap: 8px; align-items: baseline; font-size: 13px; padding: 4px 0; border-bottom: 1px solid var(--border); }
+.yl div:last-child { border-bottom: 0; }
+.yl div i { width: 8px; height: 8px; border-radius: 50%; flex: none; transform: translateY(-1px); }
+.yl div span { flex: 1; min-width: 0; }
+.yl div small { color: var(--pos); font-weight: 700; white-space: nowrap; }
+[data-w] { transition: width .7s cubic-bezier(.2,.8,.2,1); }
+[data-h] { transition: height .7s cubic-bezier(.2,.8,.2,1); }
+[data-tip] { cursor: pointer; }
+.ctip { position: fixed; z-index: 50; pointer-events: none; background: var(--text); color: var(--bg); font-size: 12px; line-height: 1.5; padding: 8px 11px; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.22); opacity: 0; transform: translateY(4px); transition: opacity .12s, transform .12s; max-width: 260px; }
+.ctip.on { opacity: 1; transform: none; }
+.ctip b { display: block; margin-bottom: 2px; }
+
+/* ajustes e formulários */
+.field { display: grid; gap: 6px; margin-bottom: 14px; }
+.field > label { font-size: 12px; color: var(--muted); font-weight: 650; }
+.field input, .field textarea { width: 100%; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface2); outline: none; font-size: 16px; }
+.field textarea { min-height: 96px; resize: vertical; }
+.btn { width: 100%; padding: 13px; border-radius: 14px; background: var(--surface2); font-weight: 650; margin-bottom: 8px; display: block; text-align: center; }
+.btn.primary { background: var(--accent2); color: #fff; }
+.btn.danger { color: var(--neg); }
+.note { font-size: 12px; color: var(--muted); margin: 8px 2px 0; }
+.seg { display: flex; gap: 6px; }
+.seg button { flex: 1; padding: 10px 4px; border-radius: 12px; background: var(--surface2); font-weight: 700; font-size: 13px; border: 2px solid transparent; }
+.seg button.on { border-color: var(--c, var(--accent)); color: var(--text); background: color-mix(in srgb, var(--c, var(--accent)) 14%, transparent); }
+.tgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.tgrid button { display: flex; align-items: center; gap: 8px; padding: 10px; border-radius: 12px; background: var(--surface2); font-weight: 650; font-size: 13px; text-align: left; border: 2px solid transparent; }
+.tgrid button i { width: 24px; height: 24px; border-radius: 50%; background: var(--tc); display: grid; place-content: center; flex: none; }
+.tgrid button i svg { width: 13px; height: 13px; fill: none; stroke: #fff; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.tgrid button.on { border-color: var(--tc); background: color-mix(in srgb, var(--tc) 14%, transparent); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.account-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.account-line span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--muted); }
+
+/* navegação */
+.nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; justify-content: center; padding: 8px 16px calc(var(--sab) + 8px); background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid var(--border); }
+.nav div { display: flex; width: 100%; max-width: 528px; }
+.nav button { flex: 1; display: grid; justify-items: center; gap: 2px; padding: 6px 0; color: var(--muted); font-size: 11px; font-weight: 600; }
+.nav button.on { color: var(--accent); }
+.nav svg { width: 24px; height: 24px; }
+.fab { position: fixed; right: max(16px, calc(50% - 264px)); bottom: calc(82px + var(--sab)); z-index: 21; width: 58px; height: 58px; border-radius: 20px; background: linear-gradient(135deg, var(--accent2), #1d4e89); color: #fff; font-size: 30px; line-height: 1; box-shadow: 0 10px 24px rgba(29, 78, 137, .45); display: grid; place-content: center; }
+.fab:active { transform: scale(.94); }
+
+/* folhas */
+.scrim { position: fixed; inset: 0; z-index: 30; background: rgba(8, 12, 24, .5); opacity: 0; pointer-events: none; transition: opacity .2s; }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 31; max-width: 560px; margin: 0 auto; max-height: 92%; overflow-y: auto; background: var(--surface); border-radius: 26px 26px 0 0; padding: 10px 18px calc(var(--sab) + 18px); transform: translateY(105%); transition: transform .28s cubic-bezier(.2,.8,.2,1); }
+body[data-sheet]:not([data-sheet=""]) .scrim { opacity: 1; pointer-events: auto; }
+body[data-sheet="sReg"] #sReg, body[data-sheet="sGoal"] #sGoal, body[data-sheet="sMes"] #sMes { transform: none; }
+.grab { width: 40px; height: 5px; border-radius: 3px; background: var(--border); margin: 0 auto 12px; }
+.sheet h2 { margin: 0 0 14px; font-size: 18px; }
+.yrow { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.yrow b { font-size: 18px; }
+.mgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+.mbtn { position: relative; padding: 14px 4px 18px; border-radius: 14px; background: var(--surface2); font-weight: 650; font-size: 14px; border: 2px solid transparent; }
+.mbtn.on { border-color: var(--accent); color: var(--accent); }
+.mbtn small { position: absolute; left: 0; right: 0; bottom: 4px; font-size: 10px; font-weight: 700; color: var(--muted); }
+.mbtn.now small { color: var(--pos); }
+.toast { position: fixed; left: 50%; bottom: calc(150px + var(--sab)); z-index: 40; transform: translate(-50%, 20px); background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-size: 13px; font-weight: 600; opacity: 0; pointer-events: none; transition: .25s; max-width: 90%; text-align: center; }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+/* autenticação */
+#authGate { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 24px; background: var(--bg); }
+#authGate[hidden] { display: none; }
+.auth-card { width: min(100%, 390px); padding: 28px; border-radius: 24px; background: var(--surface); box-shadow: var(--shadow); text-align: center; }
+.auth-card .logo { margin: 0 auto 14px; width: 56px; height: 56px; }
+.auth-card h1 { margin: 0 0 8px; font-size: 24px; }
+.auth-card p { margin: 0 0 20px; color: var(--muted); }
+body.auth-locked .app, body.auth-locked .fab, body.auth-locked .nav { display: none; }
+
+/* ---- Computador / notebook (≥ 900px): menu lateral, conteúdo largo, folhas viram janelas ---- */
+@media (min-width: 900px) {
+  body { padding-left: 232px; }
+  .app { max-width: 1180px; padding: 0 32px 48px; }
+  .top { padding: 20px 0 12px; }
+  .mfbar { max-width: 460px; }
+  main { padding: 10px 0 0; }
+  .nav { top: 0; right: auto; width: 232px; padding: 28px 14px 20px; border-top: 0; border-right: 1px solid var(--border); display: block; background: var(--surface); }
+  .nav div { flex-direction: column; gap: 4px; }
+  .nav button { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 12px; font-size: 14px; }
+  .nav button:hover { background: var(--surface2); color: var(--text); }
+  .nav button.on { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  .nav svg { width: 20px; height: 20px; }
+  .fab { right: 32px; bottom: 32px; }
+  .hero { grid-template-columns: minmax(300px, 1fr) 1.4fr; align-items: stretch; }
+  .tiles { grid-template-columns: repeat(3, 1fr); }
+  .tile { display: flex; flex-direction: column; justify-content: center; }
+  .filters { margin: 4px 0 10px; padding-inline: 0; flex-wrap: wrap; }
+  .search { max-width: 460px; }
+  .list { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
+  .reg:hover, .goal:hover { box-shadow: 0 10px 30px rgba(20, 35, 70, .14); }
+  .period { max-width: 620px; }
+  .gstats { max-width: 620px; }
+  .tl { max-width: 820px; }
+  .kpis { grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .sgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+  .sgrid .panel { margin: 0; }
+  .sgrid .wide { grid-column: 1 / -1; }
+  #v-set.on { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+  #v-set .panel { margin: 0; }
+  .sheet { left: 50%; right: auto; top: 50%; bottom: auto; width: min(520px, 92vw); max-height: 88vh; margin: 0; border-radius: 24px; padding: 22px 24px;
+    transform: translate(-50%, -46%); opacity: 0; visibility: hidden; transition: opacity .18s, transform .18s, visibility .18s; box-shadow: 0 24px 60px rgba(0,0,0,.25); }
+  body[data-sheet="sReg"] #sReg, body[data-sheet="sGoal"] #sGoal, body[data-sheet="sMes"] #sMes { transform: translate(-50%, -50%); opacity: 1; visibility: visible; }
+  .grab { display: none; }
+  .toast { bottom: 40px; }
+}
+</style>
+</head>
+<body class="auth-locked">
+<section id="authGate" aria-labelledby="authTitle">
+  <div class="auth-card">
+    <span class="logo" id="authLogo" aria-hidden="true"></span>
+    <h1 id="authTitle">Trilha de Carreira</h1>
+    <p>Seus feitos, conquistas e metas, mês a mês</p>
+    <button class="btn primary" id="loginGoogle" type="button">Continuar com Google</button>
+    <p class="note" id="authStatus">Login via conta do Google</p>
+  </div>
+</section>
+
+<div class="app">
+  <header class="top">
+    <h1><span class="brand"><span class="logo" id="logo" aria-hidden="true"></span>Trilha de Carreira</span><button class="ibtn" id="themeBtn" type="button" aria-label="Alternar tema"></button></h1>
+    <div class="hi" id="hiUser" hidden></div>
+    <div class="mfbar" id="mesBar">
+      <button class="arr" id="mPrev" type="button" aria-label="Mês anterior"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <button class="mf" id="mFilter" type="button" aria-haspopup="dialog"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span id="mfLabel"></span></button>
+      <button class="arr" id="mNext" type="button" aria-label="Próximo mês"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="mfnow" id="mNow" type="button" hidden>Hoje</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- REGISTROS -->
+    <section class="view on" id="v-reg">
+      <div class="hero">
+        <div class="bigtile">
+          <div class="lbl" id="hLbl">Registros no mês</div>
+          <div class="big" id="hCount">0</div>
+          <div class="chips" id="hChips"></div>
+        </div>
+        <div class="tiles">
+          <div class="tile"><span>No ano</span><b id="tAno">0</b><small>registros</small></div>
+          <div class="tile"><span>Metas superadas</span><b id="tMetas">0</b><small>no ano</small></div>
+          <div class="tile"><span>Sequência</span><b id="tSeq">0</b><small>meses seguidos</small></div>
+        </div>
+      </div>
+      <div class="filters" id="filters"></div>
+      <input class="search" id="search" type="search" placeholder="Buscar nos registros…" aria-label="Buscar nos registros">
+      <div class="list" id="list"></div>
+    </section>
+
+    <!-- GOALS -->
+    <section class="view" id="v-goals">
+      <div class="period">
+        <div><label>De</label><div class="ym"><select id="pDeM" aria-label="Mês inicial"></select><select id="pDeA" aria-label="Ano inicial"></select></div></div>
+        <div><label>Até</label><div class="ym"><select id="pAteM" aria-label="Mês final"></select><select id="pAteA" aria-label="Ano final"></select></div></div>
+      </div>
+      <div class="gstats" id="gStats"></div>
+      <div id="timeline"></div>
+    </section>
+
+    <!-- RESUMO -->
+    <section class="view" id="v-sum">
+      <div class="yearbar">
+        <button class="arr" id="yPrev" type="button" aria-label="Ano anterior"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+        <b id="yLabel"></b>
+        <button class="arr" id="yNext" type="button" aria-label="Próximo ano"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      </div>
+      <div id="sumBody"></div>
+    </section>
+
+    <!-- AJUSTES -->
+    <section class="view" id="v-set">
+      <div class="panel">
+        <h2>Conta</h2>
+        <div class="account-line"><span id="authUser">Não conectado</span><button class="btn danger" id="logoutBtn" type="button" style="width:auto; margin:0; padding:9px 12px">Sair</button></div>
+        <p class="note">Seus registros ficam vinculados exclusivamente a esta conta.</p>
+      </div>
+      <div class="panel">
+        <h2>Aparência</h2>
+        <div class="seg" id="themeSeg">
+          <button type="button" data-t="auto">Automático</button>
+          <button type="button" data-t="light">Claro</button>
+          <button type="button" data-t="dark">Escuro</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Backup</h2>
+        <button class="btn primary" id="exportJson" type="button">Exportar backup (JSON)</button>
+        <button class="btn" id="exportCsv" type="button">Exportar registros (CSV)</button>
+        <label class="btn" style="cursor:pointer">Importar backup (JSON)<input type="file" id="importJson" accept="application/json" hidden></label>
+        <p class="note">Os dados ficam na sua conta e sincronizados entre aparelhos. O backup continua recomendado.</p>
+      </div>
+      <div class="panel">
+        <h2>Instalar como app</h2>
+        <p class="note" style="margin:0">Android (Chrome): menu ⋮ → “Instalar app”. iPhone (Safari): Compartilhar → “Adicionar à Tela de Início”.</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<button class="fab" id="fab" type="button" aria-label="Novo registro">+</button>
+
+<nav class="nav"><div>
+  <button type="button" data-view="reg" class="on"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg>Registros</button>
+  <button type="button" data-view="goals"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></svg>Goals</button>
+  <button type="button" data-view="sum"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Resumo</button>
+  <button type="button" data-view="set"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3 1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8 1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Ajustes</button>
+</div></nav>
+
+<div class="scrim" id="scrim"></div>
+
+<div class="sheet" id="sReg" role="dialog" aria-modal="true" aria-labelledby="sRegTitle">
+  <div class="grab"></div>
+  <h2 id="sRegTitle">Novo registro</h2>
+  <div class="field"><label>Tipo</label><div class="tgrid" id="fTipo"></div></div>
+  <div class="field"><label for="fTitulo">O que você fez</label><input id="fTitulo" type="text" autocomplete="off" placeholder="Ex.: Liderei a migração do sistema de estoque"></div>
+  <div class="two">
+    <div class="field"><label for="fData">Data</label><input id="fData" type="date"></div>
+    <div class="field"><label for="fRes">Resultado / impacto</label><input id="fRes" type="text" autocomplete="off" placeholder="Ex.: +18% produtividade"></div>
+  </div>
+  <div class="field"><label for="fDesc">Detalhes (opcional)</label><textarea id="fDesc" placeholder="Contexto, quem participou, como você fez, feedback recebido…"></textarea></div>
+  <button class="btn primary" id="rSave" type="button">Salvar</button>
+  <button class="btn danger" id="rDel" type="button">Excluir</button>
+</div>
+
+<div class="sheet" id="sGoal" role="dialog" aria-modal="true" aria-labelledby="sGoalTitle">
+  <div class="grab"></div>
+  <h2 id="sGoalTitle">Nova goal</h2>
+  <div class="field"><label for="gTitulo">Goal</label><input id="gTitulo" type="text" autocomplete="off" placeholder="Ex.: Ser promovido a coordenador"></div>
+  <div class="two">
+    <div class="field"><label>Início</label><div class="ym"><select id="gIniM" aria-label="Mês de início"></select><select id="gIniA" aria-label="Ano de início"></select></div></div>
+    <div class="field"><label>Prazo</label><div class="ym"><select id="gFimM" aria-label="Mês do prazo"></select><select id="gFimA" aria-label="Ano do prazo"></select></div></div>
+  </div>
+  <div class="field"><label>Situação</label><div class="seg" id="gStatus"></div></div>
+  <div class="field" id="gRealBox"><label>Realizada em</label><div class="ym"><select id="gRealM" aria-label="Mês de realização"></select><select id="gRealA" aria-label="Ano de realização"></select></div></div>
+  <div class="field"><label for="gDesc">Detalhes (opcional)</label><textarea id="gDesc" placeholder="Por que essa goal importa, próximos passos, quem pode ajudar…"></textarea></div>
+  <button class="btn primary" id="gSave" type="button">Salvar</button>
+  <button class="btn danger" id="gDel" type="button">Excluir</button>
+</div>
+
+<div class="sheet" id="sMes" role="dialog" aria-modal="true" aria-labelledby="sMesTitle">
+  <div class="grab"></div>
+  <h2 id="sMesTitle">Escolher mês</h2>
+  <div class="yrow">
+    <button class="arr" id="smPrev" type="button" aria-label="Ano anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+    <b id="smAno"></b>
+    <button class="arr" id="smNext" type="button" aria-label="Próximo ano"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button>
+  </div>
+  <div class="mgrid" id="mGrid"></div>
+  <button class="btn" id="smToday" type="button">Voltar ao mês atual</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  const KEY = "trilha.v1";
+  const MES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+  const MES3 = MES.map((m) => m.slice(0, 3));
+  // Tipos em ordem fixa (a cor segue o tipo, nunca a posição). Ícone + nome sempre junto da cor.
+  const ICON = {
+    star: `<path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/>`,
+    target: `<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/>`,
+    box: `<path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/>`,
+    award: `<circle cx="12" cy="9" r="6"/><path d="M8.5 14L7 22l5-3 5 3-1.5-8"/>`,
+    book: `<path d="M4 5a2 2 0 0 1 2-2h14v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/>`,
+    dot: `<circle cx="12" cy="12" r="3"/>`,
+    up: `<path d="M4 17l6-6 4 4 7-7M15 8h6v6"/>`
+  };
+  const TIPOS = [
+    { k: "realizacao", l: "Realização", c: "var(--t1)", ic: "star" },
+    { k: "meta", l: "Meta superada", c: "var(--t2)", ic: "target" },
+    { k: "entrega", l: "Entrega / projeto", c: "var(--t3)", ic: "box" },
+    { k: "reconhecimento", l: "Reconhecimento", c: "var(--t4)", ic: "award" },
+    { k: "aprendizado", l: "Aprendizado", c: "var(--t5)", ic: "book" },
+    { k: "outro", l: "Outro", c: "var(--t6)", ic: "dot" }
+  ];
+  const TP = Object.fromEntries(TIPOS.map((t) => [t.k, t]));
+  const GST = [
+    { k: "planejada", l: "Planejada", c: "var(--g0)" },
+    { k: "andamento", l: "Em andamento", c: "var(--g1)" },
+    { k: "concluida", l: "Concluída", c: "var(--g2)" }
+  ];
+  const GS = Object.fromEntries(GST.map((g) => [g.k, g]));
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  const uid = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`);
+  const svg = (name) => `<svg viewBox="0 0 24 24">${ICON[name]}</svg>`;
+  const tipoPill = (t) => `<span class="tp" style="--tc:${t.c}"><i>${svg(t.ic)}</i>${t.l}</span>`;
+
+  // ---------- datas ----------
+  // Mês = "AAAA-MM". Registros têm data completa; goals só mês/ano.
+  const pad = (n) => String(n).padStart(2, "0");
+  const hoje = () => new Date();
+  const nowKey = () => `${hoje().getFullYear()}-${pad(hoje().getMonth() + 1)}`;
+  const kY = (k) => Number(k.slice(0, 4)), kM = (k) => Number(k.slice(5, 7)) - 1;
+  const mkKey = (y, m) => `${y}-${pad(m + 1)}`;
+  const addM = (k, n) => { const d = new Date(kY(k), kM(k) + n, 1); return mkKey(d.getFullYear(), d.getMonth()); };
+  const diffM = (a, b) => (kY(b) - kY(a)) * 12 + (kM(b) - kM(a)); // meses de a até b
+  const mesLongo = (k) => `${MES[kM(k)]} ${kY(k)}`;
+  const mesCurto = (k) => `${MES3[kM(k)]}/${kY(k)}`;
+  const isoHoje = () => { const d = hoje(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+
+  // ---------- estado ----------
+  const authConfig = window.TRILHA_CONFIG || {};
+  const hasAuthConfig = /^https:\/\/.+\.supabase\.co$/i.test(authConfig.supabaseUrl || "") && Boolean(authConfig.supabaseAnonKey) && Boolean(window.supabase);
+  const supabaseClient = hasAuthConfig ? window.supabase.createClient(authConfig.supabaseUrl, authConfig.supabaseAnonKey) : null;
+  let session = null, cloudReady = false, remoteSaveTimer = null, activeUserId = null, pendingCloud = false, syncing = Promise.resolve();
+
+  const normalizar = (s) => ({ registros: Array.isArray(s?.registros) ? s.registros : [], goals: Array.isArray(s?.goals) ? s.goals : [] });
+  function load() { try { return normalizar(JSON.parse(localStorage.getItem(KEY))); } catch (e) { return normalizar(null); } }
+  let state = load();
+  const save = () => {
+    try { localStorage.setItem(session?.user ? `${KEY}.${session.user.id}` : KEY, JSON.stringify(state)); } catch (e) {}
+    if (!session?.user || !supabaseClient) return;
+    if (!cloudReady) { pendingCloud = true; return; }
+    pendingCloud = false;
+    clearTimeout(remoteSaveTimer);
+    remoteSaveTimer = setTimeout(() => {
+      const snapshot = JSON.parse(JSON.stringify(state));
+      syncing = supabaseClient.from("career_states").upsert({ user_id: session.user.id, state: snapshot, updated_at: new Date().toISOString() }, { onConflict: "user_id" })
+        .then(({ error }) => { if (error) toast("Não foi possível sincronizar. Suas alterações continuam neste dispositivo."); });
+    }, 450);
+  };
+
+  let cur = nowKey(), lastNow = cur, view = "reg", fTipo = "", q = "", sumAno = hoje().getFullYear();
+  let toastT;
+  function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), 2400); }
+
+  // Logo: trilha subindo até a bandeira. Mesmo desenho do icon.svg.
+  const LOGO = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1d4e89"/><stop offset="1" stop-color="#2f6fb5"/></linearGradient></defs>
+    <rect width="512" height="512" rx="116" fill="url(#lg)"/><path d="M112 388L208 292l64 44 104-140" fill="none" stroke="#fff" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M376 198V104" stroke="#fff" stroke-width="26" stroke-linecap="round"/><path d="M388 104l72 26-72 26z" fill="#fbbf24"/>
+    <circle cx="112" cy="388" r="26" fill="#fbbf24"/><circle cx="208" cy="292" r="22" fill="#fbbf24"/><circle cx="272" cy="336" r="22" fill="#fbbf24"/></svg>`;
+  $("logo").innerHTML = LOGO;
+  $("authLogo").innerHTML = LOGO.replace(/\blg\b/g, "lgA");
+
+  // ---------- consultas ----------
+  const regsDoMes = (k) => state.registros.filter((r) => (r.data || "").startsWith(k));
+  const regsDoAno = (y) => state.registros.filter((r) => (r.data || "").startsWith(`${y}-`));
+  const ordenaRegs = (a, b) => (b.data || "").localeCompare(a.data || "") || (b.criado || 0) - (a.criado || 0);
+  // Meses seguidos com pelo menos um registro, terminando no mês atual (ou no anterior, se o atual ainda está vazio).
+  function sequencia() {
+    const meses = new Set(state.registros.map((r) => (r.data || "").slice(0, 7)));
+    let k = nowKey(), n = 0;
+    if (!meses.has(k)) k = addM(k, -1);
+    while (meses.has(k)) { n++; k = addM(k, -1); }
+    return n;
+  }
+  // Onde a goal aparece na linha do tempo: concluída → mês de realização; senão → prazo.
+  const goalMes = (g) => (g.status === "concluida" && g.realizado ? g.realizado : g.fim || g.inicio);
+  const atrasada = (g) => g.status !== "concluida" && g.fim && g.fim < nowKey();
+
+  // ---------- registros ----------
+  function renderMes() {
+    $("mfLabel").textContent = mesLongo(cur);
+    $("mNow").hidden = cur === nowKey();
+  }
+  function renderHero() {
+    const rs = regsDoMes(cur), ano = regsDoAno(kY(cur));
+    $("hLbl").textContent = `Registros em ${MES[kM(cur)]}`;
+    $("hCount").innerHTML = `${rs.length} <small>${rs.length === 1 ? "registro" : "registros"}</small>`;
+    const por = TIPOS.map((t) => [t, rs.filter((r) => r.tipo === t.k).length]).filter(([, n]) => n);
+    $("hChips").innerHTML = por.length ? por.map(([t, n]) => `<span>${n} ${t.l.toLowerCase()}</span>`).join("") : `<span>Nada registrado ainda</span>`;
+    $("tAno").textContent = ano.length;
+    $("tMetas").textContent = ano.filter((r) => r.tipo === "meta").length;
+    $("tSeq").textContent = sequencia();
+  }
+  function renderFilters() {
+    const rs = regsDoMes(cur), n = (k) => rs.filter((r) => r.tipo === k).length;
+    const opts = [["", "Todos", "", rs.length], ...TIPOS.map((t) => [t.k, t.l, t.c, n(t.k)])];
+    $("filters").innerHTML = opts.map(([v, l, c, k]) => `<button type="button" class="f${fTipo === v ? " on" : ""}" data-t="${v}">${c ? `<i style="background:${c}"></i>` : ""}${l}<span class="fn">${k}</span></button>`).join("");
+  }
+  function renderList() {
+    const todos = regsDoMes(cur);
+    const rs = todos.filter((r) => (!fTipo || r.tipo === fTipo) && (!q || `${r.titulo} ${r.descricao || ""} ${r.resultado || ""}`.toLowerCase().includes(q))).sort(ordenaRegs);
+    if (!rs.length) {
+      $("list").innerHTML = `<div class="empty">${todos.length ? "<b>Nada encontrado</b>Tente outro filtro ou busca." : `<b>Nenhum registro em ${MES[kM(cur)]}</b>Toque em + para registrar um feito, uma entrega ou uma meta superada.`}</div>`;
+      return;
+    }
+    $("list").innerHTML = rs.map((r) => {
+      const t = TP[r.tipo] || TP.outro, d = new Date(`${r.data}T12:00:00`);
+      return `<div class="reg" data-id="${r.id}" style="--tc:${t.c}">
+        <div class="dbox"><small>dia</small><b>${pad(d.getDate())}</b><small>${MES3[d.getMonth()]}</small></div>
+        <div class="rinfo">${tipoPill(t)}<h3>${esc(r.titulo)}</h3>
+          ${r.resultado ? `<span class="res">${svg("up")}${esc(r.resultado)}</span>` : ""}
+          ${r.descricao ? `<p>${esc(r.descricao)}</p>` : ""}</div>
+      </div>`;
+    }).join("");
+  }
+
+  // ---------- goals: linha do tempo ----------
+  const PKEY = "trilha.periodo";
+  let periodo = (() => { try { const p = JSON.parse(localStorage.getItem(PKEY)); if (p?.de && p?.ate) return p; } catch (e) {} return null; })();
+  function periodoPadrao() {
+    const ks = state.goals.flatMap((g) => [g.inicio, g.fim, g.realizado]).filter(Boolean).sort();
+    const y = hoje().getFullYear();
+    const de = [`${y}-01`, ks[0]].filter(Boolean).sort()[0], ate = [`${y}-12`, ks[ks.length - 1]].filter(Boolean).sort().pop();
+    return { de, ate };
+  }
+  const anos = () => {
+    const y = hoje().getFullYear(), ks = [...state.goals.flatMap((g) => [g.inicio, g.fim, g.realizado]), periodo?.de, periodo?.ate].filter(Boolean).map(kY);
+    const min = Math.min(y - 5, ...ks), max = Math.max(y + 6, ...ks);
+    return Array.from({ length: max - min + 1 }, (_, i) => min + i);
+  };
+  function fillYM(mId, aId, k) {
+    $(mId).innerHTML = MES.map((m, i) => `<option value="${i}"${i === kM(k) ? " selected" : ""}>${m}</option>`).join("");
+    $(aId).innerHTML = anos().map((y) => `<option${y === kY(k) ? " selected" : ""}>${y}</option>`).join("");
+  }
+  const readYM = (mId, aId) => mkKey(Number($(aId).value), Number($(mId).value));
+
+  function renderGoals() {
+    const p = periodo || periodoPadrao();
+    fillYM("pDeM", "pDeA", p.de); fillYM("pAteM", "pAteA", p.ate);
+    const noPer = state.goals.filter((g) => { const m = goalMes(g); return m >= p.de && m <= p.ate; });
+    const c = (f) => noPer.filter(f).length;
+    $("gStats").innerHTML = [
+      ["Concluídas", c((g) => g.status === "concluida"), GS.concluida.c],
+      ["Andamento", c((g) => g.status === "andamento" && !atrasada(g)), GS.andamento.c],
+      ["Planejadas", c((g) => g.status === "planejada" && !atrasada(g)), GS.planejada.c],
+      ["Atrasadas", c(atrasada), "var(--g3)"]
+    ].map(([l, n, cor]) => `<div><b>${n}</b><span><i style="background:${cor}"></i>${l}</span></div>`).join("");
+
+    if (!state.goals.length) {
+      $("timeline").innerHTML = `<div class="empty"><b>Nenhuma goal ainda</b>Toque em + para criar uma goal com início e prazo. Ela aparece aqui na linha do tempo, no mês do prazo (ou no mês em que foi realizada).</div>`;
+      return;
+    }
+    // Só os meses que têm goals, mais o mês atual como marcador "hoje".
+    const agora = nowKey(), porMes = new Map();
+    noPer.forEach((g) => { const m = goalMes(g); porMes.set(m, [...(porMes.get(m) || []), g]); });
+    if (agora >= p.de && agora <= p.ate && !porMes.has(agora)) porMes.set(agora, []);
+    const meses = [...porMes.keys()].sort();
+    if (!meses.length) { $("timeline").innerHTML = `<div class="empty"><b>Nada neste período</b>Ajuste o “De / Até” acima para ver outras goals.</div>`; return; }
+    $("timeline").innerHTML = `<div class="tl">${meses.map((m) => {
+      const gs = porMes.get(m).sort((a, b) => (a.titulo || "").localeCompare(b.titulo || ""));
+      return `<div class="tm${m === agora ? " now" : m < agora ? " past" : ""}"><h4>${mesCurto(m)}${m === agora ? "<em>hoje</em>" : ""}</h4>
+        ${gs.length ? gs.map(goalCard).join("") : `<p class="none">Nenhuma goal com prazo neste mês.</p>`}</div>`;
+    }).join("")}</div>`;
+    animar($("timeline"));
+  }
+  function goalCard(g) {
+    const late = atrasada(g), st = late ? { l: "Atrasada", c: "var(--g3)" } : GS[g.status] || GS.planejada;
+    const total = Math.max(1, diffM(g.inicio, g.fim) + 1);
+    const feito = g.status === "concluida" ? total : Math.min(total, Math.max(0, diffM(g.inicio, nowKey()) + 1));
+    let nota = "";
+    if (g.status === "concluida" && g.realizado) {
+      const d = diffM(g.realizado, g.fim);
+      nota = d > 0 ? `<div class="gnote pos">Realizada ${d} ${d === 1 ? "mês" : "meses"} antes do prazo</div>` : d === 0 ? `<div class="gnote pos">Realizada no prazo</div>` : `<div class="gnote mut">Realizada ${-d} ${d === -1 ? "mês" : "meses"} depois do prazo</div>`;
+    } else if (late) {
+      const d = diffM(g.fim, nowKey());
+      nota = `<div class="gnote neg">Prazo passou há ${d} ${d === 1 ? "mês" : "meses"}</div>`;
+    } else if (g.fim) {
+      const d = diffM(nowKey(), g.fim);
+      nota = `<div class="gnote mut">${d === 0 ? "Prazo é este mês" : `Faltam ${d} ${d === 1 ? "mês" : "meses"} para o prazo`}</div>`;
+    }
+    return `<div class="goal" data-gid="${g.id}" style="--gc:${st.c}">
+      <div class="gmeta"><span class="gs"><i></i>${st.l}</span><span>${mesCurto(g.inicio)} → ${mesCurto(g.fim)}</span></div>
+      <h3>${esc(g.titulo)}</h3>${g.descricao ? `<p>${esc(g.descricao)}</p>` : ""}
+      <div class="gbar" title="Tempo do período já decorrido"><i data-w="${(feito / total) * 100}"></i></div>${nota}
+    </div>`;
+  }
+  function onPeriodo() {
+    let de = readYM("pDeM", "pDeA"), ate = readYM("pAteM", "pAteA");
+    if (ate < de) { [de, ate] = [ate, de]; toast("Período invertido: ajustei a ordem"); }
+    periodo = { de, ate };
+    try { localStorage.setItem(PKEY, JSON.stringify(periodo)); } catch (e) {}
+    renderGoals();
+  }
+  ["pDeM", "pDeA", "pAteM", "pAteA"].forEach((id) => ($(id).onchange = onPeriodo));
+
+  // ---------- resumo ----------
+  const tipAttr = (html) => ` data-tip="${esc(html)}"`;
+  const pct = new Intl.NumberFormat("pt-BR", { style: "percent", maximumFractionDigits: 0 });
+  function renderSum() {
+    const y = sumAno, rs = regsDoAno(y);
+    $("yLabel").textContent = y;
+    const metas = rs.filter((r) => r.tipo === "meta").length;
+    const gConc = state.goals.filter((g) => g.status === "concluida" && (g.realizado || "").startsWith(`${y}-`)).length;
+    const ultimoMes = y < hoje().getFullYear() ? 12 : y === hoje().getFullYear() ? hoje().getMonth() + 1 : 0;
+    const ativos = new Set(rs.map((r) => r.data.slice(5, 7))).size;
+    const kpi = (l, v, s) => `<div class="kpi"><span>${l}</span><b>${v}</b><small>${s}</small></div>`;
+    const kpis = `<div class="kpis">
+      ${kpi("Registros", rs.length, `em ${y}`)}
+      ${kpi("Metas superadas", metas, rs.length ? `${pct.format(metas / rs.length)} dos registros` : "&nbsp;")}
+      ${kpi("Goals concluídas", gConc, `realizadas em ${y}`)}
+      ${kpi("Meses ativos", ultimoMes ? `${ativos}/${ultimoMes}` : ativos, ultimoMes ? "com pelo menos 1 registro" : "ano futuro")}
+    </div>`;
+    if (!rs.length && !gConc) { $("sumBody").innerHTML = kpis + `<div class="empty"><b>Sem registros em ${y}</b>Os gráficos aparecem assim que houver registros neste ano.</div>`; return; }
+
+    // colunas por mês, empilhadas por tipo
+    const porMes = MES.map((_, i) => { const k = mkKey(y, i), l = rs.filter((r) => r.data.startsWith(k)); return { i, l, n: l.length }; });
+    const max = Math.max(...porMes.map((m) => m.n), 1);
+    const cols = porMes.map((m) => {
+      const segs = TIPOS.map((t) => [t, m.l.filter((r) => r.tipo === t.k).length]).filter(([, n]) => n);
+      const tip = m.n ? `<b>${MES[m.i]}</b>${segs.map(([t, n]) => `${t.l}: ${n}`).join("<br>")}` : "";
+      return `<div class="mg"${tip ? tipAttr(tip) : ""}>${m.n ? `<b style="bottom:calc(${(m.n / max) * 100}% + 3px)">${m.n}</b>` : ""}${segs.map(([t, n], j) => `<i style="background:${t.c};transition-delay:${m.i * 30 + j * 10}ms" data-h="${(n / max) * 100}"></i>`).join("")}</div>`;
+    }).join("");
+    const curM = y === hoje().getFullYear() ? hoje().getMonth() : -1;
+    const tiposAno = TIPOS.map((t) => ({ t, n: rs.filter((r) => r.tipo === t.k).length })).filter((x) => x.n).sort((a, b) => b.n - a.n);
+    const tmax = Math.max(...tiposAno.map((x) => x.n), 1);
+
+    // linha do ano: registros por mês (mais recente primeiro) — serve de roteiro para avaliação de desempenho
+    const linha = porMes.filter((m) => m.n).reverse().map((m) => `<h5>${MES[m.i]}</h5>${[...m.l].sort(ordenaRegs).map((r) => { const t = TP[r.tipo] || TP.outro;
+      return `<div><i style="background:${t.c}" title="${t.l}"></i><span>${esc(r.titulo)}</span>${r.resultado ? `<small>${esc(r.resultado)}</small>` : ""}</div>`; }).join("")}`).join("");
+
+    $("sumBody").innerHTML = kpis + `<div class="sgrid">
+      <div class="panel wide"><h2>Registros por mês</h2><p class="sub">Toque ou passe o mouse num mês para ver por tipo</p>
+        <div class="lg">${TIPOS.map((t) => `<span><i style="background:${t.c}"></i>${t.l}</span>`).join("")}</div>
+        <div class="mm"><div class="cols">${cols}</div><div class="ax">${MES3.map((m, i) => `<span class="${i === curM ? "cur" : ""}">${m}</span>`).join("")}</div></div></div>
+      <div class="panel"><h2>Por tipo</h2><p class="sub">Quantidade de registros em ${y}</p>
+        ${tiposAno.map((x, i) => `<div class="grow"><div class="gt"><span><i style="background:${x.t.c}"></i>${x.t.l}</span><b>${x.n}<em>${pct.format(x.n / rs.length)}</em></b></div><div class="tr"><i style="background:${x.t.c};transition-delay:${i * 40}ms" data-w="${(x.n / tmax) * 100}"></i></div></div>`).join("") || `<p class="note">Sem registros.</p>`}</div>
+      <div class="panel"><h2>Linha do ano</h2><p class="sub">Tudo o que você registrou em ${y}, do mais recente ao mais antigo</p>
+        <div class="yl">${linha || `<p class="note">Sem registros.</p>`}</div>
+        <button class="btn primary" id="copyYear" type="button" style="margin:14px 0 0">Copiar resumo de ${y}</button>
+        <p class="note">Texto pronto para colar na autoavaliação ou no PDI.</p></div>
+    </div>`;
+    $("copyYear").onclick = () => copiarResumo(y);
+    if (view === "sum") animar($("sumBody"));
+  }
+  async function copiarResumo(y) {
+    const rs = regsDoAno(y).sort((a, b) => a.data.localeCompare(b.data));
+    const linhas = [`Trilha de Carreira — ${y}`, ""];
+    MES.forEach((m, i) => {
+      const l = rs.filter((r) => r.data.startsWith(mkKey(y, i)));
+      if (!l.length) return;
+      linhas.push(m.toUpperCase());
+      l.forEach((r) => linhas.push(`• [${(TP[r.tipo] || TP.outro).l}] ${r.titulo}${r.resultado ? ` — ${r.resultado}` : ""}${r.descricao ? `\n  ${r.descricao.replace(/\n/g, "\n  ")}` : ""}`));
+      linhas.push("");
+    });
+    const gs = state.goals.filter((g) => g.status === "concluida" && (g.realizado || "").startsWith(`${y}-`));
+    if (gs.length) { linhas.push("GOALS CONCLUÍDAS"); gs.forEach((g) => linhas.push(`• ${g.titulo} (${mesCurto(g.realizado)})`)); }
+    const texto = linhas.join("\n");
+    try { await navigator.clipboard.writeText(texto); toast("Resumo copiado"); }
+    catch (e) { download(`trilha-carreira-${y}.txt`, texto, "text/plain;charset=utf-8"); toast("Resumo baixado como texto"); }
+  }
+  $("yPrev").onclick = () => { sumAno--; renderSum(); animar($("sumBody")); };
+  $("yNext").onclick = () => { sumAno++; renderSum(); animar($("sumBody")); };
+
+  // Barras começam em zero e crescem até o valor (data-w = largura %, data-h = altura %).
+  function animar(root) {
+    const els = [...root.querySelectorAll("[data-w],[data-h]")];
+    els.forEach((e) => { e.style.transition = "none"; if (e.dataset.w) e.style.width = "0"; else e.style.height = "0"; });
+    void root.offsetWidth;
+    requestAnimationFrame(() => els.forEach((e) => { e.style.transition = ""; if (e.dataset.w) e.style.width = e.dataset.w + "%"; else e.style.height = e.dataset.h + "%"; }));
+  }
+  // Dica flutuante dos gráficos: segue o mouse; no toque aparece e some sozinha.
+  const tipEl = document.createElement("div"); tipEl.className = "ctip"; document.body.appendChild(tipEl);
+  let tipT;
+  const hideTip = () => tipEl.classList.remove("on");
+  function showTip(el, x, y) {
+    tipEl.innerHTML = el.dataset.tip; tipEl.classList.add("on");
+    const w = tipEl.offsetWidth, h = tipEl.offsetHeight;
+    let L = x + 14, T = y - h - 12;
+    if (L + w > innerWidth - 8) L = x - w - 14;
+    if (L < 8) L = 8;
+    if (T < 8) T = y + 18;
+    tipEl.style.left = L + "px"; tipEl.style.top = T + "px";
+  }
+  $("v-sum").addEventListener("pointermove", (e) => { if (e.pointerType !== "mouse") return; const el = e.target.closest("[data-tip]"); el ? showTip(el, e.clientX, e.clientY) : hideTip(); });
+  $("v-sum").addEventListener("pointerleave", hideTip);
+  $("v-sum").addEventListener("pointerdown", (e) => { const el = e.target.closest("[data-tip]"); if (!el) return hideTip(); showTip(el, e.clientX, e.clientY); clearTimeout(tipT); if (e.pointerType !== "mouse") tipT = setTimeout(hideTip, 2800); });
+  window.addEventListener("scroll", hideTip, { passive: true });
+
+  function renderAll() { renderMes(); renderHero(); renderFilters(); renderList(); renderGoals(); renderSum(); }
+
+  function setView(v) {
+    view = v;
+    document.querySelectorAll(".view").forEach((s) => s.classList.toggle("on", s.id === "v-" + v));
+    document.querySelectorAll(".nav button").forEach((b) => b.classList.toggle("on", b.dataset.view === v));
+    $("mesBar").style.display = v === "reg" ? "" : "none";
+    $("fab").style.display = v === "reg" || v === "goals" ? "" : "none";
+    $("fab").setAttribute("aria-label", v === "goals" ? "Nova goal" : "Novo registro");
+    window.scrollTo({ top: 0 });
+    if (v === "sum") animar($("sumBody"));
+    if (v === "goals") animar($("timeline"));
+  }
+
+  // ---------- folhas ----------
+  const openSheet = (id) => { document.body.dataset.sheet = id; };
+  const closeSheet = () => { document.body.dataset.sheet = ""; if (novaVersao) aplicarAtualizacao(); };
+  $("scrim").onclick = closeSheet;
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSheet(); });
+
+  // registro
+  let rEdit = null, rTipo = "realizacao", rArmed = false;
+  function pickTipo(k) { rTipo = k; $("fTipo").querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.k === k)); }
+  $("fTipo").innerHTML = TIPOS.map((t) => `<button type="button" data-k="${t.k}" style="--tc:${t.c}"><i>${svg(t.ic)}</i>${t.l}</button>`).join("");
+  $("fTipo").onclick = (e) => { const b = e.target.closest("[data-k]"); if (b) pickTipo(b.dataset.k); };
+  function openReg(id) {
+    rEdit = id; rArmed = false; $("rDel").textContent = "Excluir";
+    const r = id ? state.registros.find((x) => x.id === id) : null;
+    // Novo registro: hoje, se estiver no mês atual; senão, o último dia do mês aberto.
+    const padrao = cur === nowKey() ? isoHoje() : `${cur}-${pad(new Date(kY(cur), kM(cur) + 1, 0).getDate())}`;
+    $("sRegTitle").textContent = id ? "Editar registro" : "Novo registro";
+    pickTipo(r?.tipo || fTipo || "realizacao");
+    $("fTitulo").value = r?.titulo || ""; $("fData").value = r?.data || padrao; $("fRes").value = r?.resultado || ""; $("fDesc").value = r?.descricao || "";
+    $("rDel").style.display = id ? "" : "none";
+    openSheet("sReg");
+    if (!id) setTimeout(() => $("fTitulo").focus(), 300);
+  }
+  $("rSave").onclick = () => {
+    const titulo = $("fTitulo").value.trim(), data = $("fData").value;
+    if (!titulo) { toast("Descreva o que você fez"); $("fTitulo").focus(); return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) { toast("Informe a data"); $("fData").focus(); return; }
+    const dados = { tipo: rTipo, titulo, data, resultado: $("fRes").value.trim(), descricao: $("fDesc").value.trim() };
+    if (rEdit) Object.assign(state.registros.find((x) => x.id === rEdit), dados);
+    else state.registros.push({ id: uid(), criado: Date.now(), ...dados });
+    const mudou = data.slice(0, 7) !== cur;
+    if (mudou) cur = data.slice(0, 7);
+    save(); closeSheet(); renderAll();
+    toast(mudou ? `Salvo em ${mesLongo(cur)}` : "Registro salvo");
+  };
+  $("rDel").onclick = () => {
+    if (!rArmed) { rArmed = true; $("rDel").textContent = "Toque de novo para confirmar"; return; }
+    state.registros = state.registros.filter((x) => x.id !== rEdit);
+    save(); closeSheet(); renderAll(); toast("Registro excluído");
+  };
+  $("list").onclick = (e) => { const c = e.target.closest("[data-id]"); if (c) openReg(c.dataset.id); };
+
+  // goal
+  let gEdit = null, gSt = "planejada", gArmed = false;
+  function pickGSt(k) {
+    gSt = k; $("gStatus").querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.k === k));
+    $("gRealBox").style.display = k === "concluida" ? "" : "none";
+  }
+  $("gStatus").innerHTML = GST.map((g) => `<button type="button" data-k="${g.k}" style="--c:${g.c}">${g.l}</button>`).join("");
+  $("gStatus").onclick = (e) => { const b = e.target.closest("[data-k]"); if (b) pickGSt(b.dataset.k); };
+  function openGoal(id) {
+    gEdit = id; gArmed = false; $("gDel").textContent = "Excluir";
+    const g = id ? state.goals.find((x) => x.id === id) : null;
+    $("sGoalTitle").textContent = id ? "Editar goal" : "Nova goal";
+    $("gTitulo").value = g?.titulo || ""; $("gDesc").value = g?.descricao || "";
+    fillYM("gIniM", "gIniA", g?.inicio || nowKey());
+    fillYM("gFimM", "gFimA", g?.fim || addM(nowKey(), 5));
+    fillYM("gRealM", "gRealA", g?.realizado || nowKey());
+    pickGSt(g?.status || "planejada");
+    $("gDel").style.display = id ? "" : "none";
+    openSheet("sGoal");
+    if (!id) setTimeout(() => $("gTitulo").focus(), 300);
+  }
+  $("gSave").onclick = () => {
+    const titulo = $("gTitulo").value.trim();
+    if (!titulo) { toast("Dê um nome para a goal"); $("gTitulo").focus(); return; }
+    const inicio = readYM("gIniM", "gIniA"), fim = readYM("gFimM", "gFimA");
+    if (fim < inicio) { toast("O prazo precisa ser igual ou depois do início"); return; }
+    const dados = { titulo, descricao: $("gDesc").value.trim(), inicio, fim, status: gSt, realizado: gSt === "concluida" ? readYM("gRealM", "gRealA") : null };
+    if (gEdit) Object.assign(state.goals.find((x) => x.id === gEdit), dados);
+    else state.goals.push({ id: uid(), criado: Date.now(), ...dados });
+    // Se a goal ficar fora do período exibido, amplia o período para ela aparecer.
+    const m = goalMes(dados);
+    if (periodo && (m < periodo.de || m > periodo.ate)) { periodo = { de: m < periodo.de ? m : periodo.de, ate: m > periodo.ate ? m : periodo.ate }; try { localStorage.setItem(PKEY, JSON.stringify(periodo)); } catch (e) {} }
+    save(); closeSheet(); renderAll(); toast("Goal salva");
+  };
+  $("gDel").onclick = () => {
+    if (!gArmed) { gArmed = true; $("gDel").textContent = "Toque de novo para confirmar"; return; }
+    state.goals = state.goals.filter((x) => x.id !== gEdit);
+    save(); closeSheet(); renderAll(); toast("Goal excluída");
+  };
+  $("timeline").onclick = (e) => { const c = e.target.closest("[data-gid]"); if (c) openGoal(c.dataset.gid); };
+
+  // mês
+  let smAno = kY(cur);
+  function renderMGrid() {
+    $("smAno").textContent = smAno;
+    const cont = (k) => regsDoMes(k).length;
+    $("mGrid").innerHTML = MES.map((n, i) => { const k = mkKey(smAno, i), c = cont(k);
+      return `<button type="button" class="mbtn${k === cur ? " on" : ""}${k === nowKey() ? " now" : ""}" data-m="${k}">${n}<small>${k === nowKey() ? "atual" : c ? `${c} reg.` : ""}</small></button>`; }).join("");
+  }
+  $("mFilter").onclick = () => { smAno = kY(cur); renderMGrid(); openSheet("sMes"); };
+  $("smPrev").onclick = () => { smAno--; renderMGrid(); };
+  $("smNext").onclick = () => { smAno++; renderMGrid(); };
+  $("mGrid").onclick = (e) => { const b = e.target.closest("[data-m]"); if (b) { cur = b.dataset.m; closeSheet(); renderAll(); } };
+  const goNow = () => { cur = nowKey(); closeSheet(); renderAll(); };
+  $("smToday").onclick = goNow; $("mNow").onclick = goNow;
+  $("mPrev").onclick = () => { cur = addM(cur, -1); renderAll(); };
+  $("mNext").onclick = () => { cur = addM(cur, 1); renderAll(); };
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && nowKey() !== lastNow) { lastNow = nowKey(); goNow(); }
+  });
+
+  $("filters").onclick = (e) => { const b = e.target.closest("[data-t]"); if (b) { fTipo = b.dataset.t; renderFilters(); renderList(); } };
+  $("search").oninput = (e) => { q = e.target.value.trim().toLowerCase(); renderList(); };
+  $("fab").onclick = () => (view === "goals" ? openGoal(null) : openReg(null));
+  document.querySelector(".nav").onclick = (e) => { const b = e.target.closest("[data-view]"); if (b) setView(b.dataset.view); };
+
+  // ---------- tema ----------
+  const THEME_ICON = {
+    auto: `<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/>`,
+    light: `<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>`,
+    dark: `<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>`
+  };
+  const THEME_NAME = { auto: "Automático", light: "Claro", dark: "Escuro" };
+  let theme = (() => { try { const t = localStorage.getItem("trilha.theme"); return t === "light" || t === "dark" ? t : "auto"; } catch (e) { return "auto"; } })();
+  function applyTheme() {
+    if (theme === "auto") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = theme;
+    try { localStorage.setItem("trilha.theme", theme); } catch (e) {}
+    $("themeBtn").innerHTML = `<svg viewBox="0 0 24 24">${THEME_ICON[theme]}</svg>`;
+    $("themeBtn").title = `Tema: ${THEME_NAME[theme]}`;
+    document.querySelectorAll("#themeSeg button").forEach((b) => b.classList.toggle("on", b.dataset.t === theme));
+  }
+  $("themeBtn").onclick = () => { theme = { auto: "light", light: "dark", dark: "auto" }[theme]; applyTheme(); toast(`Tema: ${THEME_NAME[theme]}`); };
+  $("themeSeg").onclick = (e) => { const b = e.target.closest("[data-t]"); if (b) { theme = b.dataset.t; applyTheme(); } };
+
+  // ---------- backup ----------
+  function download(name, content, type) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([content], { type })); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+  $("exportJson").onclick = () => { download("trilha-carreira.json", JSON.stringify(state, null, 2), "application/json"); toast("Backup gerado"); };
+  $("exportCsv").onclick = () => {
+    const c = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const rows = [...state.registros].sort((a, b) => a.data.localeCompare(b.data)).map((r) => [r.data, c((TP[r.tipo] || TP.outro).l), c(r.titulo), c(r.resultado), c(r.descricao)].join(";"));
+    download("trilha-carreira-registros.csv", "﻿" + ["Data;Tipo;Registro;Resultado;Detalhes", ...rows].join("\r\n"), "text/csv;charset=utf-8");
+    toast("CSV gerado");
+  };
+  $("importJson").onchange = async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    try {
+      const d = JSON.parse(await f.text());
+      if (!Array.isArray(d.registros) && !Array.isArray(d.goals)) throw new Error("formato inválido");
+      if (!confirm("Isso substitui todos os seus registros e goals. Continuar?")) return;
+      state = normalizar(d); save(); renderAll(); toast("Backup importado");
+    } catch (err) { toast("Falha ao importar: " + err.message); }
+    e.target.value = "";
+  };
+
+  // ---------- autenticação (mesmo projeto Supabase do Personal Finance, tabela career_states) ----------
+  function primeiroNome(user) {
+    const meta = user.user_metadata || {};
+    const full = meta.full_name || meta.name;
+    if (full) return String(full).trim().split(/\s+/)[0];
+    const local = (user.email || "").split("@")[0];
+    return local ? local.charAt(0).toUpperCase() + local.slice(1) : "";
+  }
+  const setAuthStatus = (m) => { $("authStatus").textContent = m; };
+  function lockApp() {
+    cloudReady = false; session = null; activeUserId = null; pendingCloud = false;
+    clearTimeout(remoteSaveTimer);
+    document.body.classList.add("auth-locked");
+    $("authGate").hidden = false;
+    $("authUser").textContent = "Não conectado";
+    $("hiUser").hidden = true;
+  }
+  async function loadCloudState(user) {
+    const { data, error } = await supabaseClient.from("career_states").select("state").eq("user_id", user.id).maybeSingle();
+    if (error) throw error;
+    state = normalizar(data?.state);
+    try { localStorage.setItem(`${KEY}.${user.id}`, JSON.stringify(state)); } catch (e) {}
+    renderAll();
+  }
+  async function applySession(next) {
+    if (!next?.user) { lockApp(); return; }
+    const user = next.user, userId = user.id;
+    session = next; activeUserId = userId; cloudReady = false; pendingCloud = false;
+    document.body.classList.remove("auth-locked");
+    $("authGate").hidden = true;
+    $("authUser").textContent = user.email || "Conta conectada";
+    const nome = primeiroNome(user);
+    if (nome) { $("hiUser").innerHTML = `Olá, <b>${esc(nome)}</b>! O que você conquistou este mês?`; $("hiUser").hidden = false; } else $("hiUser").hidden = true;
+    try {
+      await loadCloudState(user);
+      if (activeUserId !== userId) return;
+      cloudReady = true;
+      if (pendingCloud) save();
+    } catch (error) {
+      lockApp();
+      setAuthStatus("Não foi possível carregar seus dados. Tente novamente.");
+    }
+  }
+  async function bootAuth() {
+    if (!supabaseClient) { setAuthStatus("Configure o arquivo trilha-carreira.config.js antes de publicar."); $("loginGoogle").disabled = true; return; }
+    $("loginGoogle").onclick = async () => {
+      setAuthStatus("Redirecionando para login seguro…");
+      const { error } = await supabaseClient.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${location.origin}${location.pathname}` } });
+      if (error) setAuthStatus(`Falha ao iniciar login: ${error.message}`);
+    };
+    $("logoutBtn").onclick = async () => { const { error } = await supabaseClient.auth.signOut(); if (error) toast("Não foi possível encerrar a sessão."); };
+    supabaseClient.auth.onAuthStateChange((_e, next) => { applySession(next); });
+    const { data, error } = await supabaseClient.auth.getSession();
+    if (error) { setAuthStatus("Não foi possível validar a sessão."); return; }
+    await applySession(data.session);
+  }
+
+  // ---------- atualização forçada ----------
+  // Ao abrir, ao voltar para o app e a cada 15 min compara o index.html publicado com o da abertura;
+  // mudou = nova versão: espera fechar a folha aberta e terminar a sincronização, e recarrega.
+  let versaoBase = null, novaVersao = false, recarregando = false;
+  async function checarAtualizacao() {
+    if (!location.protocol.startsWith("http") || novaVersao) return;
+    navigator.serviceWorker?.getRegistration().then((reg) => reg && reg.update()).catch(() => {});
+    let v = null;
+    try { const r = await fetch(location.pathname, { cache: "no-cache" }); v = r.ok ? await r.text() : null; } catch (e) {}
+    if (!v) return;
+    if (versaoBase === null) { versaoBase = v; return; }
+    if (v !== versaoBase) { novaVersao = true; aplicarAtualizacao(); }
+  }
+  async function aplicarAtualizacao() {
+    if (recarregando || document.body.dataset.sheet) return;
+    recarregando = true;
+    toast("Nova versão disponível. Atualizando…");
+    await new Promise((r) => setTimeout(r, 1200));
+    await syncing;
+    location.reload();
+  }
+  if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+    navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).catch(() => {});
+    const tinhaSW = Boolean(navigator.serviceWorker.controller);
+    navigator.serviceWorker.addEventListener("controllerchange", () => { if (tinhaSW) { novaVersao = true; aplicarAtualizacao(); } });
+  }
+  checarAtualizacao();
+  setInterval(checarAtualizacao, 15 * 60 * 1000);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") checarAtualizacao(); });
+
+  applyTheme(); renderAll(); setView("reg"); bootAuth();
+})();
+</script>
+</body>
+</html>
