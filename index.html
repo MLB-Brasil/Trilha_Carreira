@@ -235,7 +235,7 @@ body[data-sheet="sReg"] #sReg, body[data-sheet="sGoal"] #sGoal, body[data-sheet=
 #authGate { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 24px; background: var(--bg); }
 #authGate[hidden] { display: none; }
 .auth-card { width: min(100%, 390px); padding: 28px; border-radius: 24px; background: var(--surface); box-shadow: var(--shadow); text-align: center; }
-.auth-card .logo { margin: 0 auto 14px; width: 56px; height: 56px; }
+.auth-card .logo { margin: 0 auto 14px; width: 48px; height: 48px; }
 .auth-card h1 { margin: 0 0 8px; font-size: 24px; }
 .auth-card p { margin: 0 0 20px; color: var(--muted); }
 body.auth-locked .app, body.auth-locked .fab, body.auth-locked .nav { display: none; }
@@ -283,7 +283,7 @@ body.auth-locked .app, body.auth-locked .fab, body.auth-locked .nav { display: n
   <div class="auth-card">
     <span class="logo" id="authLogo" aria-hidden="true"></span>
     <h1 id="authTitle">Trilha de Carreira</h1>
-    <p>Seus feitos, conquistas e metas, mês a mês</p>
+    <p>Seus feitos, conquistas e metas</p>
     <button class="btn primary" id="loginGoogle" type="button">Continuar com Google</button>
     <p class="note" id="authStatus">Login via conta do Google</p>
   </div>
